@@ -30,8 +30,9 @@
 
 enum PartyBotSpells
 {
-    PB_SPELL_FOOD = 1131,
-    PB_SPELL_DRINK = 1137,
+    // This makes the bots eat Graccu's Mince Meat Fruitcake, which restores both health and mana, removing the need for a drink
+    PB_SPELL_FOOD = 25990,
+    // PB_SPELL_DRINK = 1137,
     PB_SPELL_AUTO_SHOT = 75,
     PB_SPELL_SHOOT_WAND = 5019,
     PB_SPELL_HONORLESS_TARGET = 2479,
@@ -195,7 +196,7 @@ bool PartyBotAI::DrinkAndEat()
         return false;
 
     bool const isEating = me->HasAura(PB_SPELL_FOOD);
-    bool const isDrinking = me->HasAura(PB_SPELL_DRINK);
+    bool const isDrinking = me->HasAura(PB_SPELL_FOOD);
 
     if (!isEating && needToEat)
     {
@@ -221,7 +222,7 @@ bool PartyBotAI::DrinkAndEat()
             me->GetMotionMaster()->Clear(false, true);
             me->GetMotionMaster()->MoveIdle();
         }
-        if (SpellEntry const* pSpellEntry = sSpellMgr.GetSpellEntry(PB_SPELL_DRINK))
+        if (SpellEntry const* pSpellEntry = sSpellMgr.GetSpellEntry(PB_SPELL_FOOD))
         {
             me->CastSpell(me, pSpellEntry, true);
             me->RemoveSpellCooldown(*pSpellEntry);
