@@ -556,6 +556,8 @@ bool GossipSelect_TeleportNPC(Player *player, Creature *_Creature, uint32 sender
     return true;
 }
 
+// Enchanting NPC
+
 enum Enchants
 {
     WEP2H_SUPERIOR_IMPACT = 20,
@@ -940,6 +942,8 @@ bool GossipSelect_EnchantNPC(Player* player, Creature* creature, uint32 sender, 
     }
     return true;
 }
+
+// Professions NPC
 
 void LearnSkillRecipesHelper(Player *player, uint32 skill_id)
 {
