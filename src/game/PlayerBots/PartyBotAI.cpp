@@ -275,7 +275,7 @@ bool PartyBotAI::CanTryToCastSpell(Unit const* pTarget, SpellEntry const* pSpell
             return false;
 
         // do not cast aoe if it will pull aggro
-        if (m_role != ROLE_TANK)
+        if (m_role != ROLE_TANK) // && m_class != CLASS_WARRIOR)
         {
             float radius;
             if (pSpellEntry->EffectRadiusIndex[0])
@@ -2420,6 +2420,7 @@ void PartyBotAI::UpdateInCombatAI_Warlock()
 void PartyBotAI::UpdateOutOfCombatAI_Warrior()
 {
     if (m_spells.warrior.pBattleStance &&
+        me->GetShapeshiftForm() != FORM_BATTLESTANCE &&
         CanTryToCastSpell(me, m_spells.warrior.pBattleStance))
     {
         if (DoCastSpell(me, m_spells.warrior.pBattleStance) == SPELL_CAST_OK)
@@ -2478,21 +2479,20 @@ void PartyBotAI::UpdateInCombatAI_Warrior()
         {
             DoCastSpell(me, m_spells.warrior.pBloodrage);
         }
+
         
         if (m_spells.warrior.pSunderArmor && CanTryToCastSpell(pVictim, m_spells.warrior.pSunderArmor))
         {   
-            if (DoCastSpell(pVictim, m_spells.warrior.pSunderArmor)== SPELL_CAST_OK)
-            return;
             // Use ->Id to convert the SpellEntry pointer to a uint32
             // Use EFFECT_INDEX_0 as defined in vMANGOS Unit.h
-            // Aura* sunderAura = pVictim->GetAura(11597, EFFECT_INDEX_0);
+            Aura* sunderAura = pVictim->GetAura(m_spells.warrior.pSunderArmor->Id, EFFECT_INDEX_0);
 
             // // Cast if: missing, stacks < 5, or duration < 10 seconds (10000ms)
-            // if (!sunderAura || sunderAura->GetStackAmount() < 5 || sunderAura->GetAuraDuration() < 10000)
-            // {
-            //     if (DoCastSpell(pVictim, m_spells.warrior.pSunderArmor) == SPELL_CAST_OK)
-            //         return;
-            // }
+            if (!sunderAura || sunderAura->GetStackAmount() < 5 || sunderAura->GetAuraDuration() < 10000)
+            {
+                if (DoCastSpell(pVictim, m_spells.warrior.pSunderArmor) == SPELL_CAST_OK)
+                    return;
+            }
         }
 
         if (m_spells.warrior.pExecute &&
@@ -2503,11 +2503,10 @@ void PartyBotAI::UpdateInCombatAI_Warrior()
                 return;
         }
 
-        if (m_spells.warrior.pOverpower &&
-            CanTryToCastSpell(pVictim, m_spells.warrior.pOverpower))
+        if (m_spells.warrior.pRevenge &&
+            CanTryToCastSpell(me, m_spells.warrior.pRevenge))
         {
-            if (DoCastSpell(pVictim, m_spells.warrior.pOverpower) == SPELL_CAST_OK)
-                return;
+            DoCastSpell(me, m_spells.warrior.pRevenge);
         }
 
         if (m_spells.warrior.pLastStand &&
@@ -2518,13 +2517,7 @@ void PartyBotAI::UpdateInCombatAI_Warrior()
                 return;
         }
 
-        if (m_spells.warrior.pConcussionBlow &&
-           (pVictim->IsNonMeleeSpellCasted() || pVictim->IsMoving() || (me->GetHealthPercent() < 50.0f)) &&
-            CanTryToCastSpell(pVictim, m_spells.warrior.pConcussionBlow))
-        {
-            if (DoCastSpell(pVictim, m_spells.warrior.pConcussionBlow) == SPELL_CAST_OK)
-                return;
-        }
+
 
         if (me->GetShapeshiftForm() == FORM_DEFENSIVESTANCE &&
             IsWearingShield(me))
@@ -2557,32 +2550,10 @@ void PartyBotAI::UpdateInCombatAI_Warrior()
 
 
 
-        if (m_spells.warrior.pHamstring &&
-            pVictim->IsMoving() &&
-           !pVictim->HasUnitState(UNIT_STATE_ROOT) &&
-           !pVictim->HasAuraType(SPELL_AURA_MOD_DECREASE_SPEED) &&
-            CanTryToCastSpell(pVictim, m_spells.warrior.pHamstring))
-        {
-            if (DoCastSpell(pVictim, m_spells.warrior.pHamstring) == SPELL_CAST_OK)
-                return;
-        }
 
-        if (m_spells.warrior.pIntimidatingShout &&
-           (me->GetHealthPercent() < 30.0f) &&
-           (GetAttackersInRangeCount(10.0f) > 2) &&
-            CanTryToCastSpell(pVictim, m_spells.warrior.pIntimidatingShout))
-        {
-            if (DoCastSpell(pVictim, m_spells.warrior.pIntimidatingShout) == SPELL_CAST_OK)
-                return;
-        }
 
-        if (m_spells.warrior.pRetaliation &&
-           (GetAttackersInRangeCount(10.0f) > 2) &&
-            CanTryToCastSpell(me, m_spells.warrior.pRetaliation))
-        {
-            if (DoCastSpell(me, m_spells.warrior.pRetaliation) == SPELL_CAST_OK)
-                return;
-        }
+
+
 
         if (m_spells.warrior.pSweepingStrikes &&
             CanTryToCastSpell(me, m_spells.warrior.pSweepingStrikes) &&
@@ -2626,18 +2597,29 @@ void PartyBotAI::UpdateInCombatAI_Warrior()
                 return;
         }
 
-        if ((me->GetHealthPercent() < 20.0f) ||
-            (m_role == ROLE_TANK && pVictim->GetLevel() >= me->GetLevel()))
+        if (m_role == ROLE_TANK && pVictim->GetHealthPercent() > 20.0f)
         {
             if (m_spells.warrior.pDefensiveStance &&
+                me->GetShapeshiftForm() != FORM_DEFENSIVESTANCE &&
                 CanTryToCastSpell(me, m_spells.warrior.pDefensiveStance))
             {
                 DoCastSpell(me, m_spells.warrior.pDefensiveStance);
             }
         }
+
+        else if (m_role == ROLE_TANK && pVictim->GetHealthPercent() < 20.0f)
+        {
+            if (m_spells.warrior.pBattleStance &&
+                me->GetShapeshiftForm() != FORM_BATTLESTANCE &&
+                CanTryToCastSpell(me, m_spells.warrior.pBattleStance))
+            {
+                DoCastSpell(me, m_spells.warrior.pBattleStance);
+            }
+        }
         else
         {
             if (m_spells.warrior.pBerserkerStance &&
+                me->GetShapeshiftForm() != FORM_BERSERKERSTANCE &&
                 CanTryToCastSpell(me, m_spells.warrior.pBerserkerStance))
             {
                 DoCastSpell(me, m_spells.warrior.pBerserkerStance);
@@ -2652,25 +2634,19 @@ void PartyBotAI::UpdateInCombatAI_Warrior()
         }
 
         if (m_spells.warrior.pWhirlwind &&
-            CanTryToCastSpell(pVictim, m_spells.warrior.pWhirlwind))
+            CanTryToCastSpell(me, m_spells.warrior.pWhirlwind))
         {
-            if (DoCastSpell(pVictim, m_spells.warrior.pWhirlwind) == SPELL_CAST_OK)
+            if (DoCastSpell(me, m_spells.warrior.pWhirlwind) == SPELL_CAST_OK)
                 return;
         }
 
-        if (m_spells.warrior.pDisarm &&
-            IsMeleeWeaponClass(pVictim->GetClass()) &&
-            CanTryToCastSpell(pVictim, m_spells.warrior.pDisarm))
-        {
-            if (DoCastSpell(pVictim, m_spells.warrior.pDisarm) == SPELL_CAST_OK)
-                return;
-        }
+
 
         if (m_spells.warrior.pDemoralizingShout &&
             m_role == ROLE_TANK &&
-            CanTryToCastSpell(pVictim, m_spells.warrior.pDemoralizingShout))
+            CanTryToCastSpell(me, m_spells.warrior.pDemoralizingShout))
         {
-            if (DoCastSpell(pVictim, m_spells.warrior.pDemoralizingShout) == SPELL_CAST_OK)
+            if (DoCastSpell(me, m_spells.warrior.pDemoralizingShout) == SPELL_CAST_OK)
                 return;
         }
 
@@ -2680,7 +2656,7 @@ void PartyBotAI::UpdateInCombatAI_Warrior()
             me->GetMotionMaster()->MoveChase(pVictim);
         }
 
-        if (me->GetPower(POWER_RAGE) > 30)
+        if (me->GetPower(POWER_RAGE) > 500)
         {
             if (m_spells.warrior.pCleave && me->GetEnemyCountInRadiusAround(pVictim, 8.0f) > 1)
             {
@@ -2700,16 +2676,19 @@ void PartyBotAI::UpdateInCombatAI_Warrior()
                 }
             }
         }
+        // Make the bot say its actual rage value
+        // std::string msg = "Current rage: " + std::to_string(me->GetPower(POWER_RAGE));
+        // me->Say(msg.c_str(), LANG_UNIVERSAL);
     }
-    else // no victim
-    {
-        if (m_spells.warrior.pBattleShout &&
-            CanTryToCastSpell(me, m_spells.warrior.pBattleShout))
-        {
-            if (DoCastSpell(me, m_spells.warrior.pBattleShout) == SPELL_CAST_OK)
-                return;
-        }
-    }
+    // else // no victim
+    // {
+    //     if (m_spells.warrior.pBattleShout &&
+    //         CanTryToCastSpell(me, m_spells.warrior.pBattleShout))
+    //     {
+    //         if (DoCastSpell(me, m_spells.warrior.pBattleShout) == SPELL_CAST_OK)
+    //             return;
+    //     }
+    // }
 }
 
 bool PartyBotAI::ShouldEnterStealth() const

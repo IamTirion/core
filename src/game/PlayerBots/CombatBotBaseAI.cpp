@@ -1080,6 +1080,11 @@ void CombatBotBaseAI::PopulateSpellData()
                     if (IsHigherRankSpell(m_spells.warrior.pOverpower))
                         m_spells.warrior.pOverpower = pSpellEntry;
                 }
+                else if (pSpellEntry->SpellName[0].find("Revenge") != std::string::npos)
+                {
+                    if (IsHigherRankSpell(m_spells.warrior.pRevenge))
+                        m_spells.warrior.pRevenge = pSpellEntry;
+                }
                 else if (pSpellEntry->SpellName[0].find("Heroic Strike") != std::string::npos)
                 {
                     if (IsHigherRankSpell(m_spells.warrior.pHeroicStrike))
