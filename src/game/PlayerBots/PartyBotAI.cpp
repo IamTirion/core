@@ -2430,12 +2430,6 @@ void PartyBotAI::UpdateOutOfCombatAI_Warrior()
     {
         if (CanTryToCastSpell(me, m_spells.warrior.pBattleShout))
             DoCastSpell(me, m_spells.warrior.pBattleShout);
-        else if (m_spells.warrior.pBloodrage &&
-            (me->GetPower(POWER_RAGE) < 10) &&
-            CanTryToCastSpell(me, m_spells.warrior.pBloodrage))
-        {
-            DoCastSpell(me, m_spells.warrior.pBloodrage);
-        }
     }
 
     if (Unit* pVictim = me->GetVictim())
@@ -2469,6 +2463,35 @@ void PartyBotAI::UpdateInCombatAI_Warrior()
                 if (DoCastSpell(pVictim, m_spells.warrior.pShieldBash) == SPELL_CAST_OK)
                     return;
             }
+        }
+
+        if (m_spells.warrior.pBattleShout &&
+            !me->HasAura(m_spells.warrior.pBattleShout->Id))
+        {
+            if (CanTryToCastSpell(me, m_spells.warrior.pBattleShout))
+                DoCastSpell(me, m_spells.warrior.pBattleShout);
+        }
+        
+        if (m_spells.warrior.pBloodrage &&
+            CanTryToCastSpell(me, m_spells.warrior.pBloodrage))
+        {
+            DoCastSpell(me, m_spells.warrior.pBloodrage);
+        }
+        
+        if (m_spells.warrior.pSunderArmor && CanTryToCastSpell(pVictim, m_spells.warrior.pSunderArmor))
+        {   
+            if (DoCastSpell(pVictim, m_spells.warrior.pSunderArmor)== SPELL_CAST_OK)
+            return;
+            // Use ->Id to convert the SpellEntry pointer to a uint32
+            // Use EFFECT_INDEX_0 as defined in vMANGOS Unit.h
+            // Aura* sunderAura = pVictim->GetAura(11597, EFFECT_INDEX_0);
+
+            // // Cast if: missing, stacks < 5, or duration < 10 seconds (10000ms)
+            // if (!sunderAura || sunderAura->GetStackAmount() < 5 || sunderAura->GetAuraDuration() < 10000)
+            // {
+            //     if (DoCastSpell(pVictim, m_spells.warrior.pSunderArmor) == SPELL_CAST_OK)
+            //         return;
+            // }
         }
 
         if (m_spells.warrior.pExecute &&
@@ -2531,21 +2554,7 @@ void PartyBotAI::UpdateInCombatAI_Warrior()
             }
         }
 
-        if (m_spells.warrior.pThunderClap &&
-            m_role == ROLE_TANK &&
-            CanTryToCastSpell(pVictim, m_spells.warrior.pThunderClap))
-        {
-            if (DoCastSpell(pVictim, m_spells.warrior.pThunderClap) == SPELL_CAST_OK)
-                return;
-        }
 
-        if (m_spells.warrior.pSunderArmor &&
-            m_role == ROLE_TANK &&
-            CanTryToCastSpell(pVictim, m_spells.warrior.pSunderArmor))
-        {
-            if (DoCastSpell(pVictim, m_spells.warrior.pSunderArmor) == SPELL_CAST_OK)
-                return;
-        }
 
         if (m_spells.warrior.pHamstring &&
             pVictim->IsMoving() &&
@@ -2554,13 +2563,6 @@ void PartyBotAI::UpdateInCombatAI_Warrior()
             CanTryToCastSpell(pVictim, m_spells.warrior.pHamstring))
         {
             if (DoCastSpell(pVictim, m_spells.warrior.pHamstring) == SPELL_CAST_OK)
-                return;
-        }
-
-        if (m_spells.warrior.pRend &&
-            CanTryToCastSpell(pVictim, m_spells.warrior.pRend))
-        {
-            if (DoCastSpell(pVictim, m_spells.warrior.pRend) == SPELL_CAST_OK)
                 return;
         }
 
