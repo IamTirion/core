@@ -2644,6 +2644,7 @@ void PartyBotAI::UpdateInCombatAI_Warrior()
 
         if (m_spells.warrior.pDemoralizingShout &&
             m_role == ROLE_TANK &&
+            !pVictim->HasAura(m_spells.warrior.pDemoralizingShout->Id) &&
             CanTryToCastSpell(me, m_spells.warrior.pDemoralizingShout))
         {
             if (DoCastSpell(me, m_spells.warrior.pDemoralizingShout) == SPELL_CAST_OK)
