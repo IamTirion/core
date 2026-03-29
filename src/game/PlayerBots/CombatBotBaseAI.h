@@ -354,6 +354,7 @@ public:
         struct
         {
             SpellEntry const* pIceArmor;
+            SpellEntry const* pMageArmor;
             SpellEntry const* pArcaneIntellect;
             SpellEntry const* pArcaneBrilliance;
             SpellEntry const* pIceBarrier;

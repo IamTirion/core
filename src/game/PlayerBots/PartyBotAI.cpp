@@ -1140,7 +1140,8 @@ bool PartyBotAI::CheckForDispelTargets()
 void PartyBotAI::UpdateOutOfCombatAI_Paladin()
 {
     if (m_spells.paladin.pAura &&
-        CanTryToCastSpell(me, m_spells.paladin.pAura))
+        CanTryToCastSpell(me, m_spells.paladin.pAura) &&
+        !me->HasAura(m_spells.paladin.pAura->Id))
     {
         if (DoCastSpell(me, m_spells.paladin.pAura) == SPELL_CAST_OK)
             return;
@@ -1148,7 +1149,8 @@ void PartyBotAI::UpdateOutOfCombatAI_Paladin()
 
     if (m_role == ROLE_TANK &&
         m_spells.paladin.pRighteousFury &&
-        CanTryToCastSpell(me, m_spells.paladin.pRighteousFury))
+        CanTryToCastSpell(me, m_spells.paladin.pRighteousFury) &&
+        !me->HasAura(m_spells.paladin.pRighteousFury->Id))
     {
         if (DoCastSpell(me, m_spells.paladin.pRighteousFury) == SPELL_CAST_OK)
             return;
@@ -1373,7 +1375,8 @@ void PartyBotAI::UpdateOutOfCombatAI_Shaman()
     }
 
     if (m_spells.shaman.pLightningShield &&
-        CanTryToCastSpell(me, m_spells.shaman.pLightningShield))
+        CanTryToCastSpell(me, m_spells.shaman.pLightningShield) &&
+        !me->HasAura(m_spells.shaman.pLightningShield->Id))
     {
         if (DoCastSpell(me, m_spells.shaman.pLightningShield) == SPELL_CAST_OK)
             return;
@@ -1487,7 +1490,8 @@ void PartyBotAI::UpdateInCombatAI_Shaman()
 void PartyBotAI::UpdateOutOfCombatAI_Hunter()
 {
     if (m_spells.hunter.pAspectOfTheHawk &&
-        CanTryToCastSpell(me, m_spells.hunter.pAspectOfTheHawk))
+        CanTryToCastSpell(me, m_spells.hunter.pAspectOfTheHawk) &&
+        !me->HasAura(m_spells.hunter.pAspectOfTheHawk->Id))
     {
         if (DoCastSpell(me, m_spells.hunter.pAspectOfTheHawk) == SPELL_CAST_OK)
             return;
@@ -1496,7 +1500,8 @@ void PartyBotAI::UpdateOutOfCombatAI_Hunter()
     if (Unit* pVictim = me->GetVictim())
     {
         if (m_spells.hunter.pHuntersMark &&
-            CanTryToCastSpell(pVictim, m_spells.hunter.pHuntersMark))
+            CanTryToCastSpell(pVictim, m_spells.hunter.pHuntersMark) &&
+            !pVictim->HasAura(m_spells.hunter.pHuntersMark->Id))
         {
             if (DoCastSpell(pVictim, m_spells.hunter.pHuntersMark) == SPELL_CAST_OK)
                 return;
@@ -1669,7 +1674,8 @@ void PartyBotAI::UpdateOutOfCombatAI_Mage()
 {
     if (m_spells.mage.pArcaneBrilliance)
     {
-        if (CanTryToCastSpell(me, m_spells.mage.pArcaneBrilliance))
+        if (CanTryToCastSpell(me, m_spells.mage.pArcaneBrilliance) &&
+            !me->HasAura(m_spells.mage.pArcaneBrilliance->Id))
         {
             if (DoCastSpell(me, m_spells.mage.pArcaneBrilliance) == SPELL_CAST_OK)
             {
@@ -1695,14 +1701,30 @@ void PartyBotAI::UpdateOutOfCombatAI_Mage()
         }
     }
 
-    if (m_spells.mage.pIceArmor &&
-        CanTryToCastSpell(me, m_spells.mage.pIceArmor))
-    {
-        if (DoCastSpell(me, m_spells.mage.pIceArmor) == SPELL_CAST_OK)
+    if (m_spells.mage.pMageArmor)
+    { 
+        if  (!me->HasAura(m_spells.mage.pMageArmor->Id) &&
+            CanTryToCastSpell(me, m_spells.mage.pMageArmor))
         {
-            m_isBuffing = true;
-            me->ClearTarget();
-            return;
+            if (DoCastSpell(me, m_spells.mage.pMageArmor) == SPELL_CAST_OK)
+            {
+                m_isBuffing = true;
+                me->ClearTarget();
+                return;
+            }
+        }
+    }
+    else if (m_spells.mage.pIceArmor)
+    { 
+        if  (!me->HasAura(m_spells.mage.pIceArmor->Id) &&
+            CanTryToCastSpell(me, m_spells.mage.pIceArmor))
+        {
+            if (DoCastSpell(me, m_spells.mage.pIceArmor) == SPELL_CAST_OK)
+            {
+                m_isBuffing = true;
+                me->ClearTarget();
+                return;
+            }
         }
     }
 
@@ -2020,7 +2042,8 @@ void PartyBotAI::UpdateOutOfCombatAI_Priest()
     }
 
     if (m_spells.priest.pInnerFire &&
-        CanTryToCastSpell(me, m_spells.priest.pInnerFire))
+        CanTryToCastSpell(me, m_spells.priest.pInnerFire) &&
+        !me->HasAura(m_spells.priest.pInnerFire->Id))
     {
         if (DoCastSpell(me, m_spells.priest.pInnerFire) == SPELL_CAST_OK)
         {
@@ -2232,7 +2255,8 @@ void PartyBotAI::UpdateOutOfCombatAI_Warlock()
     }
 
     if (m_spells.warlock.pDemonArmor &&
-        CanTryToCastSpell(me, m_spells.warlock.pDemonArmor))
+        CanTryToCastSpell(me, m_spells.warlock.pDemonArmor) &&
+        !me->HasAura(m_spells.warlock.pDemonArmor->Id))
     {
         if (DoCastSpell(me, m_spells.warlock.pDemonArmor) == SPELL_CAST_OK)
         {
