@@ -3316,7 +3316,7 @@ void PartyBotAI::UpdateInCombatAI_Druid()
                     return;
             }
 
-            if ((me->GetPower(POWER_RAGE) > 80) ||
+            if ((me->GetPower(POWER_RAGE) > 800) ||
                 (GetAttackersInRangeCount(10.0f) > 1))
             {
                 if (m_spells.druid.pDemoralizingRoar &&
