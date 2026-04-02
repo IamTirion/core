@@ -1141,6 +1141,13 @@ void StopPartyBotAttackHelper(PartyBotAI* pAI, Player* pBot)
         pBot->GetMotionMaster()->Clear();
     if (pAI->m_updateTimer.GetExpiry() < 3000)
         pAI->m_updateTimer.Reset(3000);
+
+    // Also stop the pet
+    if (Pet* pet = pBot->GetPet())
+    {
+        pet->AttackStop(true);
+        pet->InterruptNonMeleeSpells(false);
+    }
 }
 
 bool ChatHandler::HandlePartyBotAttackStopCommand(char* args)

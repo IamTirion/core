@@ -125,6 +125,12 @@ public:
     virtual bool CanTryToCastSpell(Unit const* pTarget, SpellEntry const* pSpellEntry) const;
     bool IsWearingShield(Player* pPlayer) const;
     bool IsInDuel() const;
+    bool IsInDungeonOrRaid() const;
+    bool IsInDungeon() const;
+    bool IsInInstance() const;
+    bool IsInRaid() const;
+    bool IsInBattleGround() const;
+    bool IsInOpenWorld() const;
     CombatBotRoles GetRole() const;
 
     void EquipOrUseNewItem();
@@ -432,6 +438,7 @@ public:
             SpellEntry const* pCurseofShadow;
             SpellEntry const* pCurseofRecklessness;
             SpellEntry const* pCurseofTongues;
+            SpellEntry const* pCurseofWeakness;
             SpellEntry const* pCurseofExhaustion;
             SpellEntry const* pLifeTap;
         } warlock;

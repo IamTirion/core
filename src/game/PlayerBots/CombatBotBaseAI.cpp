@@ -1046,6 +1046,11 @@ void CombatBotBaseAI::PopulateSpellData()
                     if (IsHigherRankSpell(m_spells.warlock.pCurseofTongues))
                         m_spells.warlock.pCurseofTongues = pSpellEntry;
                 }
+                else if (pSpellEntry->SpellName[0].find("Curse of Weakness") != std::string::npos)
+                {
+                    if (IsHigherRankSpell(m_spells.warlock.pCurseofWeakness))
+                        m_spells.warlock.pCurseofWeakness = pSpellEntry;
+                }
                 else if (pSpellEntry->SpellName[0].find("Life Tap") != std::string::npos)
                 {
                     if (IsHigherRankSpell(m_spells.warlock.pLifeTap))
@@ -1810,16 +1815,24 @@ void CombatBotBaseAI::PopulateSpellData()
 
             SpellEntry const* pPoisonSpell = nullptr;
             std::vector<SpellEntry const*> vPoisons;
-            if (hasDeadlyPoison && (pPoisonSpell = GetHighestRankOfPoisonByName("Deadly Poison", me->GetLevel())))
-                vPoisons.push_back(pPoisonSpell);
-            if (hasInstantPoison && (pPoisonSpell = GetHighestRankOfPoisonByName("Instant Poison", me->GetLevel())))
-                vPoisons.push_back(pPoisonSpell);
-            if (hasCripplingPoison && (pPoisonSpell = GetHighestRankOfPoisonByName("Crippling Poison", me->GetLevel())))
-                vPoisons.push_back(pPoisonSpell);
-            if (hasWoundPoison && (pPoisonSpell = GetHighestRankOfPoisonByName("Wound Poison", me->GetLevel())))
-                vPoisons.push_back(pPoisonSpell);
-            if (HasMindNumbingPoison && (pPoisonSpell = GetHighestRankOfPoisonByName("Mind-numbing Poison", me->GetLevel())))
-                vPoisons.push_back(pPoisonSpell);
+            if (IsInDungeonOrRaid() || IsInOpenWorld())
+            {
+                if (hasInstantPoison && (pPoisonSpell = GetHighestRankOfPoisonByName("Instant Poison", me->GetLevel())))
+                    vPoisons.push_back(pPoisonSpell);
+            }
+            else
+            {
+                if (hasDeadlyPoison && (pPoisonSpell = GetHighestRankOfPoisonByName("Deadly Poison", me->GetLevel())))
+                    vPoisons.push_back(pPoisonSpell);
+                if (hasInstantPoison && (pPoisonSpell = GetHighestRankOfPoisonByName("Instant Poison", me->GetLevel())))
+                    vPoisons.push_back(pPoisonSpell);
+                if (hasCripplingPoison && (pPoisonSpell = GetHighestRankOfPoisonByName("Crippling Poison", me->GetLevel())))
+                    vPoisons.push_back(pPoisonSpell);
+                if (hasWoundPoison && (pPoisonSpell = GetHighestRankOfPoisonByName("Wound Poison", me->GetLevel())))
+                    vPoisons.push_back(pPoisonSpell);
+                if (HasMindNumbingPoison && (pPoisonSpell = GetHighestRankOfPoisonByName("Mind-numbing Poison", me->GetLevel())))
+                    vPoisons.push_back(pPoisonSpell);
+            }
 
             if (!vPoisons.empty())
             {
@@ -2319,20 +2332,34 @@ void CombatBotBaseAI::SummonPetIfNeeded()
     }
     else if (me->GetClass() == CLASS_WARLOCK)
     {
-        if (me->GetPetGuid() || me->GetCharmGuid())
-            return;
+        if (IsInRaid())
+        {
+            Pet* pPet = me->GetPet();
+            if ((!me->GetPetGuid() || (pPet && pPet->GetEntry() != 1863)) &&
+                me->HasSpell(SPELL_SUMMON_SUCCUBUS))
+                {
+                    me->CastSpell(me, SPELL_SUMMON_SUCCUBUS, true);
+                    return;
+                }
 
-        std::vector<uint32> vSummons;
-        if (me->HasSpell(SPELL_SUMMON_IMP))
-            vSummons.push_back(SPELL_SUMMON_IMP);
-        if (me->HasSpell(SPELL_SUMMON_VOIDWALKER))
-            vSummons.push_back(SPELL_SUMMON_VOIDWALKER);
-        if (me->HasSpell(SPELL_SUMMON_FELHUNTER))
-            vSummons.push_back(SPELL_SUMMON_FELHUNTER);
-        if (me->HasSpell(SPELL_SUMMON_SUCCUBUS))
-            vSummons.push_back(SPELL_SUMMON_SUCCUBUS);
-        if (!vSummons.empty())
-            me->CastSpell(me, SelectRandomContainerElement(vSummons), true);
+        }
+        else
+        {
+            if (me->GetPetGuid() || me->GetCharmGuid())
+                return;
+
+            std::vector<uint32> vSummons;
+            if (me->HasSpell(SPELL_SUMMON_IMP))
+                vSummons.push_back(SPELL_SUMMON_IMP);
+            if (me->HasSpell(SPELL_SUMMON_VOIDWALKER))
+                vSummons.push_back(SPELL_SUMMON_VOIDWALKER);
+            if (me->HasSpell(SPELL_SUMMON_FELHUNTER))
+                vSummons.push_back(SPELL_SUMMON_FELHUNTER);
+            if (me->HasSpell(SPELL_SUMMON_SUCCUBUS))
+                vSummons.push_back(SPELL_SUMMON_SUCCUBUS);
+            if (!vSummons.empty())
+                me->CastSpell(me, SelectRandomContainerElement(vSummons), true);
+        }
     }
 }
 
@@ -3363,4 +3390,42 @@ void CombatBotBaseAI::OnPacketReceived(WorldPacket const* packet)
             return;
         }
     }
+}
+
+
+
+// Check if the bot is in a 5-man Dungeon or Raid
+bool CombatBotBaseAI::IsInDungeonOrRaid() const
+{   
+    return me->GetMap()->IsDungeon();
+}
+
+// Check if the bot is in a Dungeon only
+bool CombatBotBaseAI::IsInDungeon() const
+{   
+    return me->GetMap()->IsNonRaidDungeon();
+}
+
+// Check if the bot is in a Dungeon, Raid, or Battleground
+bool CombatBotBaseAI::IsInInstance() const
+{   
+    return me->GetMap()->Instanceable();
+}
+
+// Check if the bot is in a Raid only (Vanilla standard)
+bool CombatBotBaseAI::IsInRaid() const
+{
+    return me->GetMap()->IsRaid();
+}
+
+// Check if the bot is in a Battleground only
+bool CombatBotBaseAI::IsInBattleGround() const
+{
+    return me->GetMap()->IsBattleGround();
+}
+
+// Check if the bot is just out in the world
+bool CombatBotBaseAI::IsInOpenWorld() const
+{   
+    return me->GetMap()->IsContinent();
 }

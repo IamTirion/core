@@ -35,6 +35,9 @@
 #include <map>
 #include <vector>
 
+#include <unordered_map>
+#include <set>
+
 class WorldSession;
 class Map;
 class BattleGround;
@@ -148,6 +151,24 @@ enum GroupUpdateFlags
 #define GROUP_UPDATE_FLAGS_COUNT          21
                                                                 // 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10,11,12,13,14,15,16,17,18,19
 static uint8 const GroupUpdateLength[GROUP_UPDATE_FLAGS_COUNT] = { 1, 2, 2, 1, 2, 2, 2, 2, 4, 4, 2, 8, 1, 2, 2, 2, 1, 2, 2, 4, 2};
+
+struct GroupTask
+{
+    enum Type
+    {
+        TASK_CAST_SPELL,
+        TASK_MOVE_TO_POINT,
+        TASK_TAUNT,
+        // add more as needed
+    };
+
+    Type type;
+    ObjectGuid targetGuid;    // the target unit (if any)
+    uint32 spellId;           // for TASK_CAST_SPELL
+    float x, y, z;            // for TASK_MOVE_TO_POINT
+    ObjectGuid claimantGuid;  // who claimed this task (empty if unclaimed)
+    uint32 timestamp;         // when task was created (optional)
+};
 
 class Roll : public LootValidatorRef
 {
@@ -337,6 +358,12 @@ class Group
 
         void RewardGroupAtKill(Unit* pVictim, Player* pPlayerTap);
 
+        // Task system
+        bool ClaimTask(Player* claimant, const GroupTask& task);
+        void ReleaseTask(const GroupTask& task);
+        GroupTask* GetAvailableTask(GroupTask::Type type, ObjectGuid target = ObjectGuid());
+        void CleanupExpiredTasks();
+
         /*********************************************************/
         /***                   LFG SYSTEM                      ***/
         /*********************************************************/
@@ -458,5 +485,8 @@ class Group
         uint8*              m_subGroupsCounts;
         Team                m_groupTeam; // ALLIANCE / HORDE / TEAM_NONE / TEAM_CROSSFACTION
         uint32              m_LFGAreaId;
+
+        std::unordered_map<ObjectGuid, std::vector<GroupTask>> m_pendingTasks; // targetGuid -> tasks
+        std::unordered_map<ObjectGuid, std::set<uint32>> m_claimedTasks;       // claimant -> task IDs (optional)
 };
 #endif
