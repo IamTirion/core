@@ -590,6 +590,83 @@ void PartyBotAI::OnPlayerLogin()
         me->SetFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_SPAWNING);
 }
 
+void PartyBotAI::CheckAndExecuteGroupTask()
+{
+    if (!me->IsInWorld()) return;
+    Group* group = me->GetGroup();
+    if (!group) return;
+
+    uint8 myRoleMask = GetRoleMask(); // implement this
+
+    // Priority order
+    GroupTask::Type types[] = {
+        GroupTask::TASK_INTERRUPT,
+        GroupTask::TASK_TAUNT,
+        GroupTask::TASK_MOVE_AWAY_FROM,
+        GroupTask::TASK_MOVE_TO_POINT,
+        GroupTask::TASK_CAST_SPELL
+    };
+
+    for (auto type : types)
+    {
+        GroupTask* task = group->GetAvailableTask(type, myRoleMask);
+        if (!task) continue;
+
+        if (group->ClaimTask(me, *task))
+        {
+            ExecuteTask(*task);
+            group->ReleaseTask(*task);
+            break;
+        }
+    }
+}
+
+uint8 PartyBotAI::GetRoleMask() const
+{
+    // Example: if configured as tank
+    if (m_role == ROLE_TANK) return TASK_ROLE_TANK;
+    if (m_role == ROLE_HEALER) return TASK_ROLE_HEALER;
+    return TASK_ROLE_DPS;
+}
+
+void PartyBotAI::ExecuteTask(const GroupTask& task)
+{
+    switch (task.type)
+    {
+        case GroupTask::TASK_CAST_SPELL:
+        case GroupTask::TASK_INTERRUPT:
+        {
+            Unit* target = ObjectAccessor::GetUnit(*me, task.targetGuid);
+            if (target && me->HasSpell(task.spellId))
+                me->CastSpell(target, task.spellId, false);
+            break;
+        }
+        case GroupTask::TASK_MOVE_TO_POINT:
+            me->GetMotionMaster()->MovePoint(0, task.x, task.y, task.z, MOVE_RUN_MODE);
+            break;
+        case GroupTask::TASK_MOVE_AWAY_FROM:
+        {
+            Unit* source = ObjectAccessor::GetUnit(*me, task.targetGuid);
+            if (source)
+            {
+                float x, y, z;
+                source->GetNearPoint(me, x, y, z, 0.0f, task.z, source->GetAngle(me) + M_PI);
+                me->GetMotionMaster()->MovePoint(0, x, y, z, MOVE_RUN_MODE);
+            }
+            break;
+        }
+        case GroupTask::TASK_TAUNT:
+        {
+            Unit* target = ObjectAccessor::GetUnit(*me, task.targetGuid);
+            if (target)
+                me->CastSpell(target, 355, false); // Taunt
+            break;
+        }
+        default:
+            break;
+    }
+}
+
 void PartyBotAI::UpdateAI(uint32 const diff)
 {
     m_updateTimer.Update(diff);
@@ -909,6 +986,14 @@ void PartyBotAI::UpdateAI(uint32 const diff)
 
     if (me->IsInCombat())
         UpdateInCombatAI();
+
+    if (m_taskCheckTimer <= diff)
+    {
+        m_taskCheckTimer = 500;
+        CheckAndExecuteGroupTask();
+    }
+    else
+        m_taskCheckTimer -= diff;
 }
 
 
@@ -2348,7 +2433,7 @@ void PartyBotAI::UpdateInCombatAI_Warlock()
         {
             Group* group = me->GetGroup();
 
-            // Priority list of curses (spell entries and IDs)
+            // Build curse list (priority order)
             std::vector<std::pair<SpellEntry const*, uint32>> curses;
             if (m_spells.warlock.pCurseofRecklessness)
                 curses.emplace_back(m_spells.warlock.pCurseofRecklessness, m_spells.warlock.pCurseofRecklessness->Id);
@@ -2358,42 +2443,53 @@ void PartyBotAI::UpdateInCombatAI_Warlock()
                 curses.emplace_back(m_spells.warlock.pCurseofShadow, m_spells.warlock.pCurseofShadow->Id);
             if (m_spells.warlock.pCurseofWeakness)
                 curses.emplace_back(m_spells.warlock.pCurseofWeakness, m_spells.warlock.pCurseofWeakness->Id);
-            // add others as needed
 
+            // Check if target already has ANY curse from this warlock
+            bool alreadyCursed = false;
             for (auto& curse : curses)
             {
-                SpellEntry const* spell = curse.first;
-                uint32 spellId = curse.second;
-
-                // If the target already has this curse, skip
-                if (pVictim->HasAura(spellId))
-                    continue;
-
-                // Build a task
-                GroupTask task;
-                task.type = GroupTask::TASK_CAST_SPELL;
-                task.targetGuid = pVictim->GetObjectGuid();
-                task.spellId = spellId;
-
-                // Try to claim it
-                if (group && !group->ClaimTask(me, task))
-                    continue;   // already claimed by another bot
-
-                // Cast the spell
-                if (DoCastSpell(pVictim, spell) == SPELL_CAST_OK)
+                SpellAuraHolder* holder = pVictim->GetSpellAuraHolder(curse.second);
+                if (holder && holder->GetCasterGuid() == me->GetObjectGuid())
                 {
-                    // Reservation held, will be released when aura expires via CleanupExpiredTasks
-                    return;
+                    alreadyCursed = true;
+                    break;
                 }
-                else
+            }
+
+            // If no curse active, try to cast one (but don't return, continue to damage spells)
+            if (!alreadyCursed)
+            {
+                for (auto& curse : curses)
                 {
-                    // Cast failed, release the claim
-                    group->ReleaseTask(task);
+                    SpellEntry const* spell = curse.first;
+                    uint32 spellId = curse.second;
+
+                    // Skip if this specific curse is already present (from any caster)
+                    if (pVictim->HasAura(spellId))
+                        continue;
+
+                    GroupTask task;
+                    task.type = GroupTask::TASK_CAST_SPELL;
+                    task.targetGuid = pVictim->GetObjectGuid();
+                    task.spellId = spellId;
+
+                    if (group && !group->ClaimTask(me, task))
+                        continue;
+
+                    if (DoCastSpell(pVictim, spell) == SPELL_CAST_OK)
+                    {
+                        // Curse cast successfully, do NOT return, allow other spells
+                        break; // exit curse loop but continue to shadow bolt
+                    }
+                    else
+                    {
+                        group->ReleaseTask(task);
+                    }
                 }
             }
 
             if (m_spells.warlock.pShadowBolt &&
-            CanTryToCastSpell(pVictim, m_spells.warlock.pShadowBolt))
+                CanTryToCastSpell(pVictim, m_spells.warlock.pShadowBolt))
             {
                 if (DoCastSpell(pVictim, m_spells.warlock.pShadowBolt) == SPELL_CAST_OK)
                     return;

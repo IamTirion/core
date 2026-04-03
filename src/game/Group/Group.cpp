@@ -39,6 +39,8 @@
 #include "LFGQueue.h"
 #include "UpdateMask.h"
 
+#include "Spell.h"
+
 #include <array>
 
 GroupMemberStatus GetGroupMemberStatus(Player const* member = nullptr)
@@ -2528,65 +2530,55 @@ void Group::UpdateLooterGuid(WorldObject* pLootedObject, bool ifneed)
     }
 }
 
-bool Group::ClaimTask(Player* claimant, const GroupTask& task)
+bool Group::ClaimTask(Player* claimant, GroupTask& task)
 {
-    if (task.type != GroupTask::TASK_CAST_SPELL)
-        return false;
-
-    ObjectGuid targetGuid = task.targetGuid;
-    uint32 spellId = task.spellId;
-
-    auto& tasks = m_pendingTasks[targetGuid];
-    for (auto& t : tasks)
-    {
-        if (t.type == task.type && t.spellId == spellId)
-        {
-            if (t.claimantGuid.IsEmpty())
-            {
-                t.claimantGuid = claimant->GetObjectGuid();
-                t.timestamp = WorldTimer::getMSTime();      // <-- set timestamp
-                return true;
-            }
-            else
-                return false;
-        }
-    }
-
-    // No task exists, create one and claim it
-    GroupTask newTask = task;
-    newTask.claimantGuid = claimant->GetObjectGuid();
-    newTask.timestamp = WorldTimer::getMSTime();            // <-- set timestamp
-    tasks.push_back(newTask);
+    // Find the task in your container (by pointer or ID)
+    if (task.isClaimed) return false;
+    task.isClaimed = true;
+    task.claimantGuid = claimant->GetObjectGuid();
     return true;
 }
 
 void Group::ReleaseTask(const GroupTask& task)
 {
-    auto it = m_pendingTasks.find(task.targetGuid);
-    if (it == m_pendingTasks.end())
-        return;
-
-    for (auto& t : it->second)
-    {
-        if (t.type == task.type && t.spellId == task.spellId && t.claimantGuid == task.claimantGuid)
-        {
-            t.claimantGuid.Clear(); // or remove task entirely
-            break;
-        }
-    }
+    // Remove from m_pendingTasks (or mark as done)
+    auto& vec = m_pendingTasks[task.targetGuid];
+    vec.erase(std::remove_if(vec.begin(), vec.end(),
+        [&](const GroupTask& t) { return t.claimantGuid == task.claimantGuid && t.type == task.type; }),
+        vec.end());
 }
 
-GroupTask* Group::GetAvailableTask(GroupTask::Type type, ObjectGuid target /*= ObjectGuid()*/)
+GroupTask* Group::GetAvailableTask(GroupTask::Type type, uint8 playerRoleMask, WorldObject* source, uint32 minPriority)
 {
     for (auto& pair : m_pendingTasks)
     {
-        if (target && pair.first != target)
-            continue;
-
-        for (auto& t : pair.second)
+        for (auto& task : pair.second)
         {
-            if (t.type == type && t.claimantGuid.IsEmpty())
-                return &t;
+            if (task.isClaimed) continue;
+            if (task.type != type) continue;
+            if ((task.requiredRoleMask & playerRoleMask) == 0) continue;
+
+            uint32 now = WorldTimer::getMSTime();
+            if (now - task.timestamp > task.expiryDelay) continue;
+
+            if (task.conditionSpellId && source)
+            {
+                Unit* target = ObjectAccessor::GetUnit(*source, task.targetGuid);
+                if (!target) continue;
+                
+                // Check generic spell cast
+                Spell* spell = target->GetCurrentSpell(CURRENT_GENERIC_SPELL);
+                if (!spell || spell->m_spellInfo->Id != task.conditionSpellId)
+                {
+                    // Check channeled spell
+                    spell = target->GetCurrentSpell(CURRENT_CHANNELED_SPELL);
+                    if (!spell || spell->m_spellInfo->Id != task.conditionSpellId)
+                        continue;
+                }
+            }
+
+            if (task.priority < minPriority) continue;
+            return &task;
         }
     }
     return nullptr;
@@ -2594,38 +2586,17 @@ GroupTask* Group::GetAvailableTask(GroupTask::Type type, ObjectGuid target /*= O
 
 void Group::CleanupExpiredTasks()
 {
-    const uint32 CLAIM_TIMEOUT = 3000;   // 3 seconds
-
-    for (auto it = m_pendingTasks.begin(); it != m_pendingTasks.end();)
+    uint32 now = WorldTimer::getMSTime();
+    for (auto& pair : m_pendingTasks)
     {
-        Player* leader = sObjectMgr.GetPlayer(GetLeaderGuid());
-        if (!leader)
-        {
-            it = m_pendingTasks.erase(it);
-            continue;
-        }
-
-        Unit* target = ObjectAccessor::GetUnit(*leader, it->first);
-        if (!target || !target->IsInWorld() || target->IsDead())
-        {
-            it = m_pendingTasks.erase(it);
-            continue;
-        }
-
-        for (auto& task : it->second)
-        {
-            if (task.type == GroupTask::TASK_CAST_SPELL)
-            {
-                bool hasAura = target->HasAura(task.spellId);
-                if (!hasAura && (WorldTimer::getMSTime() - task.timestamp) > CLAIM_TIMEOUT)
-                {
-                    // Aura missing for too long, release the claim
-                    task.claimantGuid.Clear();
-                }
-                // If the aura is present, keep the claim (do nothing)
-            }
-        }
-
-        ++it;
+        auto& vec = pair.second;
+        vec.erase(std::remove_if(vec.begin(), vec.end(),
+            [now](const GroupTask& t) { return WorldTimer::getMSTimeDiff(t.timestamp, now) > t.expiryDelay; }),
+            vec.end());
     }
+}
+
+void Group::AddTask(const GroupTask& task)
+{
+    m_pendingTasks[task.targetGuid].push_back(task);
 }

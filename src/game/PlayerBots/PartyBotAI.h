@@ -90,6 +90,9 @@ public:
     void UpdateInCombatAI_Druid() final;
     void UpdateOutOfCombatAI_Druid() final;
 
+    void ExecuteTask(const GroupTask& task);
+    uint8 GetRoleMask() const;
+
     std::vector<RaidTargetIcon> m_marksToCC;
     std::vector<RaidTargetIcon> m_marksToFocus;
     ShortTimeTracker m_updateTimer;
@@ -105,6 +108,10 @@ public:
     float m_z = 0.0f;
     float m_o = 0.0f;
     bool m_resetSpellData = false;
+
+private:
+    uint32 m_taskCheckTimer = 0;
+    void CheckAndExecuteGroupTask();
 };
 
 #endif

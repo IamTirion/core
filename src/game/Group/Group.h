@@ -152,22 +152,47 @@ enum GroupUpdateFlags
                                                                 // 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10,11,12,13,14,15,16,17,18,19
 static uint8 const GroupUpdateLength[GROUP_UPDATE_FLAGS_COUNT] = { 1, 2, 2, 1, 2, 2, 2, 2, 4, 4, 2, 8, 1, 2, 2, 2, 1, 2, 2, 4, 2};
 
+enum TaskPriority : uint8 {
+    TASK_PRIORITY_LOW      = 0,
+    TASK_PRIORITY_NORMAL   = 1,
+    TASK_PRIORITY_HIGH     = 2,
+    TASK_PRIORITY_CRITICAL = 3
+};
+
+enum TaskRoleMask : uint8 {
+    TASK_ROLE_TANK   = 0x01,
+    TASK_ROLE_HEALER = 0x02,
+    TASK_ROLE_DPS    = 0x04,
+    TASK_ROLE_ANY    = 0xFF
+};
+
 struct GroupTask
 {
-    enum Type
-    {
+    enum Type {
+        TASK_NONE,
         TASK_CAST_SPELL,
         TASK_MOVE_TO_POINT,
         TASK_TAUNT,
-        // add more as needed
+        TASK_INTERRUPT,          // new: interrupt a specific spell
+        TASK_MOVE_AWAY_FROM,     // new: move away from a target (for fire/void zones)
+        TASK_STOP_CASTING,       // new: cancel current spell
+        TASK_USE_ITEM            // new: use a specific item (e.g., healthstone)
     };
 
-    Type type;
-    ObjectGuid targetGuid;    // the target unit (if any)
-    uint32 spellId;           // for TASK_CAST_SPELL
-    float x, y, z;            // for TASK_MOVE_TO_POINT
-    ObjectGuid claimantGuid;  // who claimed this task (empty if unclaimed)
-    uint32 timestamp;         // when task was created (optional)
+    Type type = TASK_NONE;
+    ObjectGuid targetGuid;          // who to cast on, taunt, move away from, etc.
+    uint32 spellId = 0;             // for TASK_CAST_SPELL, TASK_INTERRUPT
+    uint32 itemId = 0;              // for TASK_USE_ITEM
+    float x = 0.0f, y = 0.0f, z = 0.0f;  // for TASK_MOVE_TO_POINT, TASK_MOVE_AWAY_FROM (destination)
+    ObjectGuid claimantGuid;        // who claimed this task
+    uint32 timestamp = 0;           // when task was created (for expiry)
+    uint32 expiryDelay = 5000;      // milliseconds after which task expires if not completed
+    uint8 priority = TASK_PRIORITY_NORMAL;
+    uint8 requiredRoleMask = TASK_ROLE_ANY;
+    uint32 conditionSpellId = 0;    // if non-zero, task only valid while target is casting this spell
+    bool isClaimed = false;         // whether someone already took it
+
+    GroupTask() : timestamp(WorldTimer::getMSTime()) {}
 };
 
 class Roll : public LootValidatorRef
@@ -358,11 +383,12 @@ class Group
 
         void RewardGroupAtKill(Unit* pVictim, Player* pPlayerTap);
 
-        // Task system
-        bool ClaimTask(Player* claimant, const GroupTask& task);
+        // Task management
+        void AddTask(const GroupTask& task);
+        bool ClaimTask(Player* claimant, GroupTask& outTask);
         void ReleaseTask(const GroupTask& task);
-        GroupTask* GetAvailableTask(GroupTask::Type type, ObjectGuid target = ObjectGuid());
-        void CleanupExpiredTasks();
+        void CleanupExpiredTasks();  // call periodically (e.g., every 2 seconds)
+        GroupTask* GetAvailableTask(GroupTask::Type type, uint8 playerRoleMask = 0xFF, WorldObject* source = nullptr, uint32 minPriority = 0);
 
         /*********************************************************/
         /***                   LFG SYSTEM                      ***/
@@ -401,6 +427,9 @@ class Group
         BoundInstancesMap& GetBoundInstances() { return m_boundInstances; }
 
         Team GetTeam() const { return m_groupTeam; }
+    private:
+        std::list<GroupTask> m_tasks;
+        mutable std::mutex m_taskMutex;  // if you use multiple threads
     protected:
         bool _addMember(ObjectGuid guid, char const* name, bool isAssistant = false);
         bool _addMember(ObjectGuid guid, char const* name, bool isAssistant, uint8 group);
