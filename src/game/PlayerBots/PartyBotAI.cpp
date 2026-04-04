@@ -178,7 +178,6 @@ bool PartyBotAI::RunAwayFromTarget(Unit* pEnemy)
         me->MonsterMove(pTarget->GetPositionX(), pTarget->GetPositionY(), pTarget->GetPositionZ());
         return true;
     }
-
     return me->GetMotionMaster()->MoveDistance(pEnemy, 15.0f);
 }
 
@@ -978,8 +977,16 @@ void PartyBotAI::UpdateAI(uint32 const diff)
             {
                 case IDLE_MOTION_TYPE:
                 case FOLLOW_MOTION_TYPE:
-                    me->GetMotionMaster()->MoveChase(pVictim, 25.0f); //Need to set distance, otherwise Hunters will get in melee range
-                    break;
+                    if (GetRole() == ROLE_RANGE_DPS)
+                    {
+                        me->GetMotionMaster()->MoveChase(pVictim, 15.0f);
+                        break;    
+                    }
+                    else
+                    {
+                        me->GetMotionMaster()->MoveChase(pVictim);
+                        break;
+                    }
             }
         }
     }
@@ -1634,8 +1641,8 @@ void PartyBotAI::UpdateInCombatAI_Hunter()
 {
     if (Unit* pVictim = me->GetVictim())
     {
-        if (me->GetMotionMaster()->GetCurrentMovementGeneratorType() == IDLE_MOTION_TYPE
-            && me->GetDistance(pVictim) > 30.0f)
+        if (me->GetMotionMaster()->GetCurrentMovementGeneratorType() == IDLE_MOTION_TYPE)
+            // && me->GetDistance(pVictim) > 30.0f)
         {
             me->Say("Chasing.", LANG_UNIVERSAL);
             me->GetMotionMaster()->MoveChase(pVictim, 25.0f);

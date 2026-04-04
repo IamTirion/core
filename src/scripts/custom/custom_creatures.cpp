@@ -1558,7 +1558,7 @@ struct npc_training_dummyAI : ScriptedAI
 
     void Reset() override
     {
-        m_uiCombatTimer = 15000;
+        m_uiCombatTimer = 5000;
         attackers.clear();
     }
 
@@ -1633,6 +1633,137 @@ struct npc_training_dummyAI : ScriptedAI
 CreatureAI* GetAI_npc_training_dummy(Creature* pCreature)
 {
     return new npc_training_dummyAI(pCreature);
+}
+
+// ---------------------------------------------------------------------------
+// Tanking Dummy, inherits from training dummy, fights back with Mortal Strike
+// ---------------------------------------------------------------------------
+
+struct npc_tanking_dummyAI : public npc_training_dummyAI
+{
+    explicit npc_tanking_dummyAI(Creature* pCreature)
+        : npc_training_dummyAI(pCreature)
+    {
+        m_uiMortalStrikeTimer = 6000;
+    }
+
+    uint32 m_uiMortalStrikeTimer;
+
+    void Reset() override
+    {
+        npc_training_dummyAI::Reset();
+        m_uiMortalStrikeTimer = 6000;
+        m_uiCombatTimer = 2000;
+        SetCombatMovement(false);
+        m_creature->SetAttackTime(BASE_ATTACK, 2000);
+    }
+
+    void Aggro(Unit* pWho) override
+    {
+        SetCombatMovement(false);
+        m_uiCombatTimer = 2000;
+        npc_training_dummyAI::Aggro(pWho);
+    }
+
+    void AttackStart(Unit* pWho) override
+    {
+        if (!pWho)
+            return;
+
+        if (m_creature->Attack(pWho, true))
+        {
+            m_creature->SetInCombatWith(pWho);
+            pWho->SetInCombatWith(m_creature);
+        }
+    }
+
+    void UpdateAI(uint32 const diff) override
+    {
+        if (m_creature->IsInCombat())
+        {
+            bool hasRecentAttacker = false;
+            Unit* victim = m_creature->GetVictim();
+
+            // Check each attacker's last damage time
+            for (auto itr = attackers.begin(); itr != attackers.end();)
+            {
+                Unit* pAttacker = m_creature->GetMap()->GetUnit(itr->first);
+                time_t now = std::time(nullptr);
+                if (!pAttacker || !pAttacker->IsInWorld() || itr->second + 1 < now)
+                {
+                    if (pAttacker)
+                    {
+                        m_creature->_removeAttacker(pAttacker);
+                        m_creature->GetThreatManager().modifyThreatPercent(pAttacker, -101.0f);
+                    }
+                    itr = attackers.erase(itr);
+                    continue;
+                }
+                hasRecentAttacker = true;
+                ++itr;
+            }
+
+            // If current victim is not a recent attacker, stop attacking immediately
+            if (victim)
+            {
+                auto it = attackers.find(victim->GetObjectGuid());
+                if (it == attackers.end() || it->second + 1 < std::time(nullptr))
+                {
+                    m_creature->AttackStop();           // stop melee
+                    m_creature->GetThreatManager().modifyThreatPercent(victim, -101.0f);
+                    victim = nullptr;
+                }
+            }
+
+            // If no recent attackers, start the evade timer and ensure no attacks
+            if (!hasRecentAttacker)
+            {
+                // Prevent any queued melee attack
+                if (m_creature->GetVictim())
+                    m_creature->AttackStop();
+
+                if (m_uiCombatTimer <= diff)
+                {
+                    EnterEvadeMode();
+                    return;
+                }
+                else
+                {
+                    m_uiCombatTimer -= diff;
+                }
+                // Skip melee and spells while waiting to evade
+                return;
+            }
+            else
+            {
+                m_uiCombatTimer = 2000;   // reset timer while attackers are present
+            }
+        }
+
+        // Core melee attacks (only if we still have a victim)
+        ScriptedAI::UpdateAI(diff);
+
+        if (!m_creature->IsInCombat() || !m_creature->GetVictim())
+            return;
+
+        // Mortal Strike ability
+        if (m_uiMortalStrikeTimer <= diff)
+        {
+            if (Unit* victim = m_creature->GetVictim())
+                if (m_creature->IsWithinDistInMap(victim, 5.0f))
+                    m_creature->CastSpell(victim, 12294, true);
+            m_uiMortalStrikeTimer = 20000;
+        }
+        else
+        {
+            m_uiMortalStrikeTimer -= diff;
+        }
+    }
+};
+
+CreatureAI* GetAI_npc_tanking_dummy(Creature* pCreature)
+{
+    return new npc_tanking_dummyAI(pCreature);
 }
 
 struct npc_summon_debugAI : ScriptedAI
@@ -1728,6 +1859,11 @@ void AddSC_custom_creatures()
     newscript = new Script;
     newscript->Name = "custom_npc_training_dummy";
     newscript->GetAI = &GetAI_npc_training_dummy;
+    newscript->RegisterSelf(false);
+
+    newscript = new Script;
+    newscript->Name = "custom_npc_tanking_dummy";
+    newscript->GetAI = &GetAI_npc_tanking_dummy;
     newscript->RegisterSelf(false);
 
     newscript = new Script;
