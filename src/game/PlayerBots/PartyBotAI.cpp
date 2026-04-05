@@ -719,9 +719,12 @@ void PartyBotAI::UpdateAI(uint32 const diff)
             if (m_role == ROLE_INVALID)
                 AutoAssignRole();
 
-            if (me->IsGameMaster())
+            // if (me->IsGameMaster())
+            // {
                 me->SetGameMaster(false);
-
+                me->SetCheatGod(false);
+            
+            // }
             me->TeleportTo(m_mapId, m_x, m_y, m_z, m_o);
         }
 
@@ -837,8 +840,6 @@ void PartyBotAI::UpdateAI(uint32 const diff)
         {
             if (me->GetPowerPercent(POWER_MANA) >= 20.0f)
                 me->InterruptSpell(CURRENT_AUTOREPEAT_SPELL, true);
-            else
-                UpdateInCombatAI_Mage();
         }
         return;
     }
