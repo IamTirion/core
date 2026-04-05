@@ -1205,7 +1205,7 @@ void ApplyWorldBuffsToPlayer(Player* player, Creature* caster)
             player->AddAura(24799, 0, nullptr);   // Smoked Desert Dumplings
             AddAuraFromDummy(player, caster, 25916, 90032); //Greater Blessing of Might
             
-            if (player->HasSpell(SPELL_SHIELD_SLAM)||player->HasSpell(SPELL_BLOODTHIRST) && player->HasSpell(SPELL_LAST_STAND)) //Tank
+            if (player->HasSpell(SPELL_SHIELD_SLAM)||(player->HasSpell(SPELL_BLOODTHIRST) && player->HasSpell(SPELL_LAST_STAND))) //Tank
             {
                 player->AddAura(17540, 0, nullptr);   // Greater Stoneshield Potion
                 AddAuraFromDummy(player, caster, 25890, 90032); //Greater Blessing of Light

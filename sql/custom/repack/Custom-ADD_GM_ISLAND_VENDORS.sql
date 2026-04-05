@@ -35,6 +35,8 @@ INSERT INTO `creature_template` (`entry`, `patch`, `name`, `subname`, `level_min
 (90030, 0, 'Premade Gear', '', 60, 60, 35, 1, 0, 104, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 1.14286, 18, 5, 0, 7, 0, 0, 1, 1, 65, 1, 1, 1, 0.14, 0, 2000, 2000, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, NULL, '', 0, 3, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 'custom_premade_gear_npc'),
 (90031, 0, 'Premade Specs', '', 60, 60, 35, 1, 0, 18, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 1.14286, 18, 5, 0, 7, 0, 0, 1, 1, 65, 1, 1, 1, 0.14, 0, 2000, 2000, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, NULL, '', 0, 3, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 'custom_premade_spec_npc'),
 (90032, 0, 'World Buffs', '', 60, 60, 35, 1, 0, 108, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 1.14286, 18, 5, 0, 7, 0, 0, 1, 1, 65, 1, 1, 1, 0.14, 0, 2000, 2000, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, NULL, '', 0, 3, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 'custom_world_buffs_npc');
+(90033, 0, 'Heroic Tanking Dummy', '', 63, 63, 914, 0, 0, 3019, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 1.14286, 18, 5, 0, 7, 0, 3, 1, 1, 65, 1, 1, 5, 0.14, 0, 2000, 2000, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, NULL, '', 0, 3, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 64, 'custom_npc_tanking_dummy');
+
 -- NPC_TRAINER
 INSERT INTO `npc_trainer` (`entry`, `spell`, `spellcost`, `reqskill`, `reqskillvalue`, `reqlevel`) VALUES (90000, 499, 0, 0, 0, 20);
 INSERT INTO `npc_trainer` (`entry`, `spell`, `spellcost`, `reqskill`, `reqskillvalue`, `reqlevel`) VALUES (90000, 1151, 0, 0, 0, 26);
@@ -2386,6 +2388,8 @@ INSERT INTO `creature` (`guid`, `id`, `map`, `position_x`, `position_y`, `positi
 (2000031, 90030, 1, 16281.7, 16296.9, 12.8599, 2.36683, 120, 120, 0, 100, 100, 0),
 (2000032, 90031, 1, 16283.5, 16297.3, 12.7021, 1.94665, 120, 120, 0, 100, 100, 0),
 (2000033, 90032, 1, 16228.8, 16283, 13.1756, 3.04135, 120, 120, 0, 100, 100, 0);
+(2000034, 90033, 1, 16291.8, 16326.3, 8.26637, 1.06893, 25, 25, 0, 100, 100, 0);
+
 -- NPC_TEXT
 INSERT INTO `npc_text` (`ID`, `BroadcastTextID0`, `Probability0`) VALUES (90000, 99990, 1);
 INSERT INTO `broadcast_text` (`entry`, `male_text`, `female_text`) VALUES (99990, 'Greetings $N. Enjoying the vendors?\r\n\r\nVisit my channel for more fun stuff:\r\nwww.youtube.com/brotalnia', 'Greetings $N. Enjoying the vendors?\r\n\r\nVisit my channel for more fun stuff:\r\nwww.youtube.com/brotalnia');

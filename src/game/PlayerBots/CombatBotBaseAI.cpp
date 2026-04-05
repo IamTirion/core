@@ -18,6 +18,8 @@ enum CombatBotSpells
     SPELL_PLATE_PROFICIENCY = 750,
 
     SPELL_SHIELD_SLAM = 23922,
+    SPELL_BLOODTHIRST = 23881,
+    SPELL_LAST_STAND = 12975,
     SPELL_HOLY_SHIELD = 20925,
     SPELL_SANCTITY_AURA = 20218,
     SPELL_SHADOWFORM = 15473,
@@ -59,7 +61,8 @@ void CombatBotBaseAI::AutoAssignRole()
     {
         case CLASS_WARRIOR:
         {
-            if (me->HasSpell(SPELL_SHIELD_SLAM))
+            if (me->HasSpell(SPELL_SHIELD_SLAM) ||
+               (me->HasSpell(SPELL_BLOODTHIRST) && me->HasSpell(SPELL_LAST_STAND)))
                 m_role = ROLE_TANK;
             else
                 m_role = ROLE_MELEE_DPS;
@@ -1075,7 +1078,8 @@ void CombatBotBaseAI::PopulateSpellData()
                     if (IsHigherRankSpell(m_spells.warrior.pDefensiveStance))
                         m_spells.warrior.pDefensiveStance = pSpellEntry;
                 }
-                else if (pSpellEntry->SpellName[0].find("Charge") != std::string::npos)
+                else if (pSpellEntry->SpellName[0].find("Charge") != std::string::npos &&
+                         pSpellEntry->SpellFamilyName == SPELLFAMILY_WARRIOR)
                 {
                     if (IsHigherRankSpell(m_spells.warrior.pCharge))
                         m_spells.warrior.pCharge = pSpellEntry;

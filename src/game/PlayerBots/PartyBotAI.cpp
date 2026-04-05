@@ -1641,8 +1641,8 @@ void PartyBotAI::UpdateInCombatAI_Hunter()
 {
     if (Unit* pVictim = me->GetVictim())
     {
-        if (me->GetMotionMaster()->GetCurrentMovementGeneratorType() == IDLE_MOTION_TYPE)
-            // && me->GetDistance(pVictim) > 30.0f)
+        if (me->GetMotionMaster()->GetCurrentMovementGeneratorType() == IDLE_MOTION_TYPE &&
+            me->GetDistance(pVictim) > 30.0f)
         {
             me->Say("Chasing.", LANG_UNIVERSAL);
             me->GetMotionMaster()->MoveChase(pVictim, 25.0f);
@@ -2660,21 +2660,29 @@ void PartyBotAI::UpdateOutOfCombatAI_Warrior()
             return;
     }
 
+    if (Unit* pVictim = me->GetVictim())
+    {
+        if (m_spells.warrior.pCharge &&
+            CanTryToCastSpell(pVictim, m_spells.warrior.pCharge))
+        {   
+            // me->Say("Charging out of combat.", LANG_UNIVERSAL);
+            SpellCastResult result = DoCastSpell(pVictim, m_spells.warrior.pCharge);
+            // me->Say(("Charge result: " + std::to_string(result)).c_str(), LANG_UNIVERSAL);
+            // me->Say(("Charge spell ID: " + std::to_string(m_spells.warrior.pCharge->Id)).c_str(), LANG_UNIVERSAL);
+            if (result == SPELL_CAST_OK)
+                return;
+            // if (DoCastSpell(pVictim, m_spells.warrior.pCharge) == SPELL_CAST_OK)
+            // {
+            //     return;
+            // }
+        }
+    }
+
     if (m_spells.warrior.pBattleShout &&
        !me->HasAura(m_spells.warrior.pBattleShout->Id))
     {
         if (CanTryToCastSpell(me, m_spells.warrior.pBattleShout))
             DoCastSpell(me, m_spells.warrior.pBattleShout);
-    }
-
-    if (Unit* pVictim = me->GetVictim())
-    {
-        if (m_spells.warrior.pCharge &&
-            CanTryToCastSpell(pVictim, m_spells.warrior.pCharge))
-        {
-            if (DoCastSpell(pVictim, m_spells.warrior.pCharge) == SPELL_CAST_OK)
-                return;
-        }
     }
 }
 

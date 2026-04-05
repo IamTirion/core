@@ -1090,6 +1090,62 @@ bool ChatHandler::HandlePartyBotSetRoleCommand(char* args)
     return false;
 }
 
+bool ChatHandler::HandlePartyBotGetRoleCommand(char* args)
+{
+    // No arguments needed, uses selected player
+    Player* pTarget = GetSelectedPlayer();
+    if (!pTarget)
+    {
+        SendSysMessage(LANG_NO_CHAR_SELECTED);
+        SetSentErrorMessage(true);
+        return false;
+    }
+
+    // Check if the target is a party bot (has PartyBotAI)
+    if (!pTarget->AI())
+    {
+        SendSysMessage("Target is not a party bot.");
+        SetSentErrorMessage(true);
+        return false;
+    }
+
+    PartyBotAI* pAI = dynamic_cast<PartyBotAI*>(pTarget->AI());
+    if (!pAI)
+    {
+        SendSysMessage("Target is not a party bot.");
+        SetSentErrorMessage(true);
+        return false;
+    }
+
+    // Get the bot's current role
+    CombatBotRoles role = pAI->m_role;
+
+    // Convert role to string
+    const char* roleStr = "unknown";
+    switch (role)
+    {
+        case ROLE_TANK:
+            roleStr = "tank";
+            break;
+        case ROLE_MELEE_DPS:
+            roleStr = "melee dps";
+            break;
+        case ROLE_RANGE_DPS:
+            roleStr = "ranged dps";
+            break;
+        case ROLE_HEALER:
+            roleStr = "healer";
+            break;
+        default:
+            roleStr = "none";
+            break;
+    }
+
+    // Send result to player
+    PSendSysMessage("%s's current role: %s", pTarget->GetName(), roleStr);
+    return true;
+}
+
 bool ChatHandler::HandlePartyBotAttackStartCommand(char* args)
 {
     Player* pPlayer = GetSession()->GetPlayer();
