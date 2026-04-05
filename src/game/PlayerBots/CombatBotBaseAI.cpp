@@ -1078,12 +1078,17 @@ void CombatBotBaseAI::PopulateSpellData()
                     if (IsHigherRankSpell(m_spells.warrior.pDefensiveStance))
                         m_spells.warrior.pDefensiveStance = pSpellEntry;
                 }
-                else if (pSpellEntry->SpellName[0].find("Charge") != std::string::npos &&
-                         pSpellEntry->SpellFamilyName == SPELLFAMILY_WARRIOR)
+                else if (pSpellEntry->SpellName[0] == "Charge")
                 {
                     if (IsHigherRankSpell(m_spells.warrior.pCharge))
                         m_spells.warrior.pCharge = pSpellEntry;
                 }
+                // else if (pSpellEntry->SpellName[0].find("Charge") != std::string::npos &&
+                //          pSpellEntry->SpellFamilyName == SPELLFAMILY_WARRIOR)
+                // {
+                //     if (IsHigherRankSpell(m_spells.warrior.pCharge))
+                //         m_spells.warrior.pCharge = pSpellEntry;
+                // }
                 else if (pSpellEntry->SpellName[0].find("Intercept") != std::string::npos)
                 {
                     if (IsHigherRankSpell(m_spells.warrior.pIntercept))
