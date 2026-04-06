@@ -229,11 +229,13 @@ ChatCommand * ChatHandler::getCommandTable()
 
     static ChatCommand characterPremadeCommandTable[] =
     {
-        { "gear",          SEC_BASIC_ADMIN,     false, &ChatHandler::HandleCharacterPremadeGearCommand,     "", nullptr },
-        { "spec",          SEC_BASIC_ADMIN,     false, &ChatHandler::HandleCharacterPremadeSpecCommand,     "", nullptr },
-        { "savegear",      SEC_DEVELOPER,       false, &ChatHandler::HandleCharacterPremadeSaveGearCommand, "", nullptr },
-        { "savespec",      SEC_DEVELOPER,       false, &ChatHandler::HandleCharacterPremadeSaveSpecCommand, "", nullptr },
-        { nullptr,         0,                   false, nullptr,                                             "", nullptr }
+        { "gear",          SEC_BASIC_ADMIN,     false, &ChatHandler::HandleCharacterPremadeGearCommand,       "", nullptr },
+        { "spec",          SEC_BASIC_ADMIN,     false, &ChatHandler::HandleCharacterPremadeSpecCommand,       "", nullptr },
+        { "savegear",      SEC_DEVELOPER,       false, &ChatHandler::HandleCharacterPremadeSaveGearCommand,   "", nullptr },
+        { "savespec",      SEC_DEVELOPER,       false, &ChatHandler::HandleCharacterPremadeSaveSpecCommand,   "", nullptr },
+        { "deletegear",    SEC_DEVELOPER,       false, &ChatHandler::HandleCharacterPremadeDeleteGearCommand, "", nullptr },
+        { "deletespec",    SEC_DEVELOPER,       false, &ChatHandler::HandleCharacterPremadeDeleteSpecCommand, "", nullptr },
+        { nullptr,         0,                   false, nullptr,                                               "", nullptr }
     };
 
     static ChatCommand characterCommandTable[] =

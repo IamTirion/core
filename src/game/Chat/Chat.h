@@ -379,6 +379,8 @@ class ChatHandler
         bool HandleCharacterPremadeSpecCommand(char *args);
         bool HandleCharacterPremadeSaveGearCommand(char *args);
         bool HandleCharacterPremadeSaveSpecCommand(char *args);
+        bool HandleCharacterPremadeDeleteGearCommand(char* args);
+        bool HandleCharacterPremadeDeleteSpecCommand(char* args);
         bool HandleFactionChangeItemsCommand(char *args);
         // bg
         bool HandleBGStatusCommand(char *args);

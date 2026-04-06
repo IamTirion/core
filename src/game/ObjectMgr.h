@@ -572,6 +572,7 @@ struct PlayerPremadeGearTemplate
     uint8 requiredClass = 0;
     CombatBotRoles role = ROLE_INVALID;
     std::string name;
+    uint32 order;
     std::vector<PlayerPremadeItem> items;
 };
 struct PlayerPremadeSpecTemplate
@@ -581,6 +582,7 @@ struct PlayerPremadeSpecTemplate
     uint8 requiredClass = 0;
     CombatBotRoles role = ROLE_INVALID;
     std::string name;
+    uint32 order; 
     std::vector<uint32> spells;
 };
 typedef std::unordered_map<uint32, PlayerPremadeGearTemplate> PlayerPremadeGearMap;

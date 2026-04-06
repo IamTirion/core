@@ -11841,8 +11841,8 @@ void ObjectMgr::LoadPlayerPremadeTemplates()
         sLog.Out(LOG_BASIC, LOG_LVL_MINIMAL, "Loading player premade gear templates ...");
         m_playerPremadeGearMap.clear();
 
-        //                                                               0        1        2        3       4
-        std::unique_ptr<QueryResult> result(WorldDatabase.Query("SELECT `entry`, `class`, `level`, `role`, `name` FROM `player_premade_item_template`"));
+        //                                                               0        1        2        3       4       5
+        std::unique_ptr<QueryResult> result(WorldDatabase.Query("SELECT `entry`, `class`, `level`, `role`, `name`, `order` FROM `player_premade_item_template`"));
 
         if (!result)
         {
@@ -11865,6 +11865,7 @@ void ObjectMgr::LoadPlayerPremadeTemplates()
             uint8 level = fields[2].GetUInt8();
             uint8 role = fields[3].GetUInt8();
             std::string name = fields[4].GetCppString();
+            uint32 order = fields[5].GetUInt32();
 
             switch (requiredClass)
             {
@@ -11895,6 +11896,7 @@ void ObjectMgr::LoadPlayerPremadeTemplates()
             data.level = level;
             data.role = CombatBotRoles(role);
             data.name = name;
+            data.order = order;
 
         } while (result->NextRow());
 
@@ -11964,8 +11966,8 @@ void ObjectMgr::LoadPlayerPremadeTemplates()
         sLog.Out(LOG_BASIC, LOG_LVL_MINIMAL, "Loading player premade spec templates ...");
         m_playerPremadeSpecMap.clear();
 
-        //                                                               0        1        2        3       4
-        std::unique_ptr<QueryResult> result(WorldDatabase.Query("SELECT `entry`, `class`, `level`, `role`, `name` FROM `player_premade_spell_template`"));
+        //                                                               0        1        2        3       4       5
+        std::unique_ptr<QueryResult> result(WorldDatabase.Query("SELECT `entry`, `class`, `level`, `role`, `name`, `order` FROM `player_premade_spell_template`"));
 
         if (!result)
         {
@@ -11988,6 +11990,7 @@ void ObjectMgr::LoadPlayerPremadeTemplates()
             uint8 level = fields[2].GetUInt8();
             uint8 role = fields[3].GetUInt8();
             std::string name = fields[4].GetCppString();
+            uint32 order = fields[5].GetUInt32();
 
             switch (requiredClass)
             {
@@ -12018,6 +12021,7 @@ void ObjectMgr::LoadPlayerPremadeTemplates()
             data.level = level;
             data.role = CombatBotRoles(role);
             data.name = name;
+            data.order = order;
 
         } while (result->NextRow());
 

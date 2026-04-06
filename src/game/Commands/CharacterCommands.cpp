@@ -2119,6 +2119,69 @@ bool ChatHandler::HandleCharacterPremadeSaveGearCommand(char* args)
     return true;
 }
 
+bool ChatHandler::HandleCharacterPremadeDeleteGearCommand(char* args)
+{
+    if (!*args)
+    {
+        SendSysMessage("Incorrect syntax. Template name or entry number expected.");
+        return false;
+    }
+
+    char* arg1 = strtok(args, " ");
+    if (!arg1)
+        return false;
+
+    uint32 entry = 0;
+    std::string templateName;
+
+    // Try to interpret argument as numeric entry first
+    char* endPtr = nullptr;
+    long numericValue = strtol(arg1, &endPtr, 10);
+    if (*endPtr == '\0' && numericValue > 0)
+    {
+        entry = (uint32)numericValue;
+    }
+    else
+    {
+        templateName = arg1;
+        templateName = EscapeString(templateName);
+
+        // Find entry by name
+        std::unique_ptr<QueryResult> result = WorldDatabase.PQuery(
+            "SELECT `entry` FROM `player_premade_item_template` WHERE `name` = '%s'",
+            templateName.c_str());
+        if (!result)
+        {
+            PSendSysMessage("No gear template found with name '%s'.", templateName.c_str());
+            return false;
+        }
+
+        Field* fields = result->Fetch();
+        entry = fields[0].GetUInt32();
+    }
+
+    // Verify template exists
+    std::unique_ptr<QueryResult> check = WorldDatabase.PQuery(
+        "SELECT 1 FROM `player_premade_item_template` WHERE `entry` = %u", entry);
+    if (!check)
+    {
+        PSendSysMessage("Gear template with entry %u does not exist.", entry);
+        return false;
+    }
+
+    // Delete all items associated with this template
+    WorldDatabase.DirectPExecute("DELETE FROM `player_premade_item` WHERE `entry` = %u", entry);
+
+    // Delete the template itself
+    WorldDatabase.DirectPExecute("DELETE FROM `player_premade_item_template` WHERE `entry` = %u", entry);
+
+    // Reload templates so the server no longer serves the deleted one
+    sObjectMgr.LoadPlayerPremadeTemplates();
+
+    PSendSysMessage("Premade gear template %u successfully deleted.", entry);
+    return true;
+}
+
 bool ChatHandler::HandleCharacterPremadeSpecCommand(char* args)
 {
     Player* pPlayer = GetSelectedPlayer();
@@ -2223,6 +2286,66 @@ bool ChatHandler::HandleCharacterPremadeSaveSpecCommand(char* args)
     sObjectMgr.LoadPlayerPremadeTemplates();
 
     PSendSysMessage("Premade spec template %u saved to database.", entry);
+    return true;
+}
+
+bool ChatHandler::HandleCharacterPremadeDeleteSpecCommand(char* args)
+{
+    if (!*args)
+    {
+        SendSysMessage("Incorrect syntax. Template name or entry number expected.");
+        return false;
+    }
+
+    char* arg1 = strtok(args, " ");
+    if (!arg1)
+        return false;
+
+    uint32 entry = 0;
+    std::string templateName;
+
+    // Try to interpret argument as numeric entry first
+    char* endPtr = nullptr;
+    long numericValue = strtol(arg1, &endPtr, 10);
+    if (*endPtr == '\0' && numericValue > 0)
+    {
+        entry = (uint32)numericValue;
+    }
+    else
+    {
+        templateName = arg1;
+        templateName = EscapeString(templateName);
+
+        // Find entry by name
+        std::unique_ptr<QueryResult> result = WorldDatabase.PQuery("SELECT `entry` FROM `player_premade_spell_template` WHERE `name` = '%s'", templateName.c_str());
+        if (!result)
+        {
+            PSendSysMessage("No template found with name '%s'.", templateName.c_str());
+            return false;
+        }
+
+        Field* fields = result->Fetch();
+        entry = fields[0].GetUInt32();
+    }
+
+    // Verify template exists
+    std::unique_ptr<QueryResult> check = WorldDatabase.PQuery("SELECT 1 FROM `player_premade_spell_template` WHERE `entry` = %u", entry);
+    if (!check)
+    {
+        PSendSysMessage("Template with entry %u does not exist.", entry);
+        return false;
+    }
+
+    // Delete spells associated with this template
+    WorldDatabase.DirectPExecute("DELETE FROM `player_premade_spell` WHERE `entry` = %u", entry);
+
+    // Delete the template itself
+    WorldDatabase.DirectPExecute("DELETE FROM `player_premade_spell_template` WHERE `entry` = %u", entry);
+
+    // Reload templates
+    sObjectMgr.LoadPlayerPremadeTemplates();
+
+    PSendSysMessage("Premade spec template %u successfully deleted.", entry);
     return true;
 }
 

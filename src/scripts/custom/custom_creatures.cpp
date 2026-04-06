@@ -1104,13 +1104,23 @@ bool GossipSelect_ProfessionNPC(Player* player, Creature* creature, uint32 sende
 
 bool GossipHello_PremadeGearNPC(Player* player, Creature* creature)
 {
-    for (auto itr : sObjectMgr.GetPlayerPremadeGearTemplates())
+    // Collect pointers to gear templates for this player's class
+    std::vector<PlayerPremadeGearTemplate const*> templates;
+    for (auto const& itr : sObjectMgr.GetPlayerPremadeGearTemplates())
     {
         if (itr.second.requiredClass == player->GetClass())
-        {
-            player->ADD_GOSSIP_ITEM(GOSSIP_ICON_INTERACT_2, itr.second.name.c_str(), GOSSIP_SENDER_MAIN, itr.first);
-        }
+            templates.push_back(&itr.second);
     }
+
+    // Sort by 'order' field (ascending)
+    std::sort(templates.begin(), templates.end(),
+        [](PlayerPremadeGearTemplate const* a, PlayerPremadeGearTemplate const* b) {
+            return a->order < b->order;
+        });
+
+    // Add gossip items in sorted order
+    for (auto const* tmpl : templates)
+        player->ADD_GOSSIP_ITEM(GOSSIP_ICON_INTERACT_2, tmpl->name.c_str(), GOSSIP_SENDER_MAIN, tmpl->entry);
 
     player->SEND_GOSSIP_MENU(player->GetGossipTextId(creature), creature->GetGUID());
     return true;
@@ -1126,13 +1136,23 @@ bool GossipSelect_PremadeGearNPC(Player* player, Creature* creature, uint32 send
 
 bool GossipHello_PremadeSpecNPC(Player* player, Creature* creature)
 {
-    for (auto itr : sObjectMgr.GetPlayerPremadeSpecTemplates())
+    // Collect pointers to the templates for this player's class
+    std::vector<PlayerPremadeSpecTemplate const*> specs;
+    for (auto const& itr : sObjectMgr.GetPlayerPremadeSpecTemplates())
     {
         if (itr.second.requiredClass == player->GetClass())
-        {
-            player->ADD_GOSSIP_ITEM(GOSSIP_ICON_INTERACT_2, itr.second.name.c_str(), GOSSIP_SENDER_MAIN, itr.first);
-        }
+            specs.push_back(&itr.second);
     }
+
+    // Sort by the 'order' field (ascending)
+    std::sort(specs.begin(), specs.end(),
+        [](PlayerPremadeSpecTemplate const* a, PlayerPremadeSpecTemplate const* b) {
+            return a->order < b->order;
+        });
+
+    // Add gossip items in sorted order
+    for (auto const* spec : specs)
+        player->ADD_GOSSIP_ITEM(GOSSIP_ICON_INTERACT_2, spec->name.c_str(), GOSSIP_SENDER_MAIN, spec->entry);
 
     player->SEND_GOSSIP_MENU(player->GetGossipTextId(creature), creature->GetGUID());
     return true;
