@@ -1217,6 +1217,21 @@ bool ChatHandler::HandlePartyBotAttackStopCommand(char* args)
         return false;
     }
 
+    // If the selected unit is a party bot, stop that bot from attacking.
+    if (Player* pBotTarget = dynamic_cast<Player*>(pTarget))
+    {
+        if (pBotTarget->AI())
+        {
+            if (PartyBotAI* pAI = dynamic_cast<PartyBotAI*>(pBotTarget->AI()))
+            {
+                StopPartyBotAttackHelper(pAI, pBotTarget);
+                PSendSysMessage("Bot %s has stopped attacking.", pBotTarget->GetName());
+                return true;
+            }
+        }
+    }
+
+    // Stop all party bots in the group that are attacking the selected target.
     Group* pGroup = pPlayer->GetGroup();
     if (!pGroup)
     {
