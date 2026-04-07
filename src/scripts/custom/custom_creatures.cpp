@@ -1461,6 +1461,7 @@ bool GossipHello_WorldBuffsNPC(Player* player, Creature* creature)
     player->ADD_GOSSIP_ITEM(GOSSIP_ICON_TALK, "Buff myself",             GOSSIP_SENDER_MAIN, 2);
     player->ADD_GOSSIP_ITEM(GOSSIP_ICON_TALK, "Fire Resistance (Group)", GOSSIP_SENDER_MAIN, 3);
     player->ADD_GOSSIP_ITEM(GOSSIP_ICON_TALK, "Windfury (Only you)",     GOSSIP_SENDER_MAIN, 4);
+    player->ADD_GOSSIP_ITEM(GOSSIP_ICON_TALK, "Reset cooldowns (Group)", GOSSIP_SENDER_MAIN, 5);
     player->SEND_GOSSIP_MENU(player->GetGossipTextId(creature), creature->GetGUID());
     return true;
 }
@@ -1554,6 +1555,32 @@ bool GossipSelect_WorldBuffsNPC(Player* player, Creature* creature, uint32 sende
             // Refresh the item to the client so the visual/tooltip appears
             player->ApplyEnchantment(pItem, TEMP_ENCHANTMENT_SLOT, true); 
             player->GetSession()->SendNotification("I have a dream.");
+            player->CLOSE_GOSSIP_MENU();
+            break;
+        }
+
+        case 5: // Reset cooldowns for raid/party
+        {
+            Group* group = player->GetGroup();
+            if (group)
+            {
+                // Loop through all group members (works for both party and raid)
+                for (GroupReference* itr = group->GetFirstMember(); itr != nullptr; itr = itr->next())
+                {
+                    Player* member = itr->getSource();
+                    if (member && member->IsInWorld() && member->IsAlive())
+                    {
+                        member->RemoveAllCooldowns();
+                    }
+                }
+                player->GetSession()->SendNotification("Cooldowns reset for your group.");
+            }
+            else
+            {
+                // No group, just reset the player's own cooldowns
+                player->RemoveAllCooldowns();
+                player->GetSession()->SendNotification("Your cooldowns have been reset.");
+            }
             player->CLOSE_GOSSIP_MENU();
             break;
         }
